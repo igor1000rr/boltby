@@ -337,7 +337,13 @@ ${value.content}
           undefined,
           chatMetadata.get(),
         );
-        syncChatToCloud(finalChatId, [...archivedMessages, ...messages], _urlId, description.get(), chatMetadata.get()).catch(() => {});
+        syncChatToCloud(
+          finalChatId,
+          [...archivedMessages, ...messages],
+          _urlId,
+          description.get(),
+          chatMetadata.get(),
+        ).catch(() => {});
       } catch (error) {
         log.error('Failed to save chat messages:', error);
       }

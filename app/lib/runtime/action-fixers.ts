@@ -76,7 +76,7 @@ export const PACKAGE_NAME_CORRECTIONS: Record<string, string> = {
   '@types/react-dom': '@types/react',
 
   // Appwrite
-  'appwrite': 'appwrite',
+  appwrite: 'appwrite',
 };
 
 /**

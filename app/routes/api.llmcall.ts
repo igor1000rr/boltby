@@ -117,12 +117,16 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       if (provider.name === 'Ollama') {
         const ollamaBase =
           providerSettings?.Ollama?.baseUrl ||
-          serverEnv.OLLAMA_API_BASE_URL || process?.env?.OLLAMA_API_BASE_URL || 'http://127.0.0.1:11434';
+          serverEnv.OLLAMA_API_BASE_URL ||
+          process?.env?.OLLAMA_API_BASE_URL ||
+          'http://127.0.0.1:11434';
         await resourceManager.prepareOllama(ollamaBase, modelDetails.name);
       } else if (provider.name === 'LMStudio') {
         const lmsBase =
           providerSettings?.LMStudio?.baseUrl ||
-          serverEnv.LMSTUDIO_API_BASE_URL || process?.env?.LMSTUDIO_API_BASE_URL || 'http://127.0.0.1:1234';
+          serverEnv.LMSTUDIO_API_BASE_URL ||
+          process?.env?.LMSTUDIO_API_BASE_URL ||
+          'http://127.0.0.1:1234';
         await resourceManager.prepareLMStudio(lmsBase, modelDetails.name);
       } else {
         await resourceManager.unloadAll();

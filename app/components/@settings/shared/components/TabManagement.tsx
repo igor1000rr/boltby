@@ -24,6 +24,7 @@ const TAB_ICONS: Record<TabType, string> = {
   'event-logs': 'i-ph:list-bullets-fill',
   update: 'i-ph:arrow-clockwise-fill',
   'task-manager': 'i-ph:chart-line-fill',
+  'gpu-nodes': 'i-ph:gpu-fill',
   'tab-management': 'i-ph:squares-four-fill',
 };
 

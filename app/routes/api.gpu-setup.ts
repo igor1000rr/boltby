@@ -1,5 +1,10 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __pendingGpuNodes: any[] | undefined;
+}
+
 /**
  * GPU Setup API
  *
@@ -43,9 +48,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const tokenData = decodeToken(token);
 
   if (!tokenData) {
-    return new Response('# ❌ Невалидный или просроченный токен.\n# Сгенерируй новую команду в Boltby → Settings → GPU Nodes\nexit 1\n', {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    return new Response(
+      '# ❌ Невалидный или просроченный токен.\n# Сгенерируй новую команду в Boltby → Settings → GPU Nodes\nexit 1\n',
+      {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      },
+    );
   }
 
   const boltbyUrl = tokenData.url.replace(/\/$/, '');
@@ -342,12 +350,14 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ ok: false, error: 'Invalid or expired token' }, { status: 401 });
     }
 
-    // We can't directly write to Appwrite from the server route without the API key.
-    // Instead, return success with the node info — the client will pick it up
-    // via polling or the user will refresh the GPU Nodes tab.
-    //
-    // For now, store registration in a simple in-memory map that the client can poll.
-    // In production, you'd use Appwrite server SDK here.
+    /*
+     * We can't directly write to Appwrite from the server route without the API key.
+     * Instead, return success with the node info — the client will pick it up
+     * via polling or the user will refresh the GPU Nodes tab.
+     *
+     * For now, store registration in a simple in-memory map that the client can poll.
+     * In production, you'd use Appwrite server SDK here.
+     */
 
     const nodeId = `auto_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 

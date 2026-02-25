@@ -228,8 +228,7 @@ function NodeCard({
   const statusColor =
     node.status === 'online' ? 'bg-green-500' : node.status === 'offline' ? 'bg-red-500' : 'bg-yellow-500';
 
-  const statusText =
-    node.status === 'online' ? 'Online' : node.status === 'offline' ? 'Offline' : 'Не проверено';
+  const statusText = node.status === 'online' ? 'Online' : node.status === 'offline' ? 'Offline' : 'Не проверено';
 
   return (
     <div
@@ -246,13 +245,18 @@ function NodeCard({
             <div
               className={classNames(
                 'w-10 h-10 rounded-lg flex items-center justify-center text-lg',
-                isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary',
+                isActive
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary',
               )}
             >
               {node.provider === 'ollama' ? '🦙' : '🖥️'}
             </div>
             <div
-              className={classNames('absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-bolt-elements-background-depth-2', statusColor)}
+              className={classNames(
+                'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-bolt-elements-background-depth-2',
+                statusColor,
+              )}
             />
           </div>
           <div>
@@ -287,9 +291,7 @@ function NodeCard({
           {node.latency > 0 && <span>{node.latency}ms</span>}
           {node.modelCount > 0 && <span>{node.modelCount} моделей</span>}
           {node.lastChecked && (
-            <span>
-              {new Date(node.lastChecked).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <span>{new Date(node.lastChecked).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</span>
           )}
         </div>
       )}
@@ -353,7 +355,9 @@ function ModelsModal({ node, onClose }: { node: GpuNode; onClose: () => void }) 
   const [models, setModels] = useState<GpuNodeModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [pullName, setPullName] = useState('');
-  const [pulling, setPulling] = useState<Record<string, { status: string; percent: number; done: boolean; error: string }>>({});
+  const [pulling, setPulling] = useState<
+    Record<string, { status: string; percent: number; done: boolean; error: string }>
+  >({});
   const pollTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const SUGGESTED = [
@@ -381,59 +385,69 @@ function ModelsModal({ node, onClose }: { node: GpuNode; onClose: () => void }) 
     };
   }, [refresh]);
 
-  const startPull = useCallback(async (name: string) => {
-    if (!name.trim()) {
-      return;
-    }
+  const startPull = useCallback(
+    async (name: string) => {
+      if (!name.trim()) {
+        return;
+      }
 
-    setPulling((p) => ({ ...p, [name]: { status: 'starting', percent: 0, done: false, error: '' } }));
+      setPulling((p) => ({ ...p, [name]: { status: 'starting', percent: 0, done: false, error: '' } }));
 
-    const result = await pullModelOnNode(node.id, name);
+      const result = await pullModelOnNode(node.id, name);
 
-    if (!result.ok) {
-      setPulling((p) => ({ ...p, [name]: { status: 'error', percent: 0, done: true, error: result.message || 'Failed' } }));
-      toast.error(`Ошибка: ${result.message}`);
-      return;
-    }
-
-    toast.info(`📥 Скачивание ${name} запущено`);
-
-    // Poll progress
-    let nullCount = 0;
-    const timer = setInterval(async () => {
-      const status = await getPullStatus(node.id, name);
-
-      if (!status) {
-        nullCount++;
-
-        // If server lost track of this job (cleaned up), stop polling
-        if (nullCount >= 5) {
-          clearInterval(timer);
-          delete pollTimers.current[name];
-          setPulling((p) => ({ ...p, [name]: { status: 'unknown', percent: 0, done: true, error: 'Потеряна связь с сервером' } }));
-        }
+      if (!result.ok) {
+        setPulling((p) => ({
+          ...p,
+          [name]: { status: 'error', percent: 0, done: true, error: result.message || 'Failed' },
+        }));
+        toast.error(`Ошибка: ${result.message}`);
 
         return;
       }
 
-      nullCount = 0;
-      setPulling((p) => ({ ...p, [name]: status }));
+      toast.info(`📥 Скачивание ${name} запущено`);
 
-      if (status.done) {
-        clearInterval(timer);
-        delete pollTimers.current[name];
+      // Poll progress
+      let nullCount = 0;
+      const timer = setInterval(async () => {
+        const status = await getPullStatus(node.id, name);
 
-        if (status.error) {
-          toast.error(`❌ ${name}: ${status.error}`);
-        } else {
-          toast.success(`✅ ${name} установлена!`);
-          refresh();
+        if (!status) {
+          nullCount++;
+
+          // If server lost track of this job (cleaned up), stop polling
+          if (nullCount >= 5) {
+            clearInterval(timer);
+            delete pollTimers.current[name];
+            setPulling((p) => ({
+              ...p,
+              [name]: { status: 'unknown', percent: 0, done: true, error: 'Потеряна связь с сервером' },
+            }));
+          }
+
+          return;
         }
-      }
-    }, 2000);
 
-    pollTimers.current[name] = timer;
-  }, [node.id, refresh]);
+        nullCount = 0;
+        setPulling((p) => ({ ...p, [name]: status }));
+
+        if (status.done) {
+          clearInterval(timer);
+          delete pollTimers.current[name];
+
+          if (status.error) {
+            toast.error(`❌ ${name}: ${status.error}`);
+          } else {
+            toast.success(`✅ ${name} установлена!`);
+            refresh();
+          }
+        }
+      }, 2000);
+
+      pollTimers.current[name] = timer;
+    },
+    [node.id, refresh],
+  );
 
   const installedNames = new Set(models.map((m) => m.name));
 
@@ -446,9 +460,7 @@ function ModelsModal({ node, onClose }: { node: GpuNode; onClose: () => void }) 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-bolt-elements-borderColor shrink-0">
           <div>
-            <h3 className="text-sm font-medium text-bolt-elements-textPrimary">
-              Модели — {node.name}
-            </h3>
+            <h3 className="text-sm font-medium text-bolt-elements-textPrimary">Модели — {node.name}</h3>
             <p className="text-xs text-bolt-elements-textTertiary">
               {node.host}:{node.port} · {models.length} моделей
             </p>
@@ -546,11 +558,14 @@ function ModelsModal({ node, onClose }: { node: GpuNode; onClose: () => void }) 
                           </span>
                           {p.done && p.error && (
                             <button
-                              onClick={() => setPulling((prev) => {
-                                const next = { ...prev };
-                                delete next[name];
-                                return next;
-                              })}
+                              onClick={() =>
+                                setPulling((prev) => {
+                                  const next = { ...prev };
+                                  delete next[name];
+
+                                  return next;
+                                })
+                              }
                               className="text-[10px] text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
                               title="Убрать"
                             >
@@ -653,13 +668,16 @@ function SetupCommandSection() {
     }, 5000);
 
     // Stop polling after 30 minutes
-    timeoutRef.current = setTimeout(() => {
-      setPolling(false);
+    timeoutRef.current = setTimeout(
+      () => {
+        setPolling(false);
 
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-      }
-    }, 30 * 60 * 1000);
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+        }
+      },
+      30 * 60 * 1000,
+    );
   }, []);
 
   // Cleanup on unmount
@@ -786,30 +804,24 @@ const GpuNodesTab = () => {
     initGpuNodes();
   }, []);
 
-  const handleAdd = useCallback(
-    async (data: NodeFormData) => {
-      const node = await addNode(data);
+  const handleAdd = useCallback(async (data: NodeFormData) => {
+    const node = await addNode(data);
 
-      if (node) {
-        toast.success(`GPU нода "${data.name}" добавлена`);
-        setShowForm(false);
+    if (node) {
+      toast.success(`GPU нода "${data.name}" добавлена`);
+      setShowForm(false);
 
-        // Auto-check
-        checkNode(node.id);
-      }
-    },
-    [],
-  );
+      // Auto-check
+      checkNode(node.id);
+    }
+  }, []);
 
-  const handleEdit = useCallback(
-    async (nodeId: string, data: NodeFormData) => {
-      await updateNode(nodeId, data);
-      toast.success('Нода обновлена');
-      setEditingNode(null);
-      checkNode(nodeId);
-    },
-    [],
-  );
+  const handleEdit = useCallback(async (nodeId: string, data: NodeFormData) => {
+    await updateNode(nodeId, data);
+    toast.success('Нода обновлена');
+    setEditingNode(null);
+    checkNode(nodeId);
+  }, []);
 
   const handleDelete = useCallback(async (nodeId: string, name: string) => {
     if (!confirm(`Удалить ноду "${name}"?`)) {
@@ -864,22 +876,23 @@ const GpuNodesTab = () => {
       </div>
 
       {/* Active node banner */}
-      {active && (() => {
-        const activeNode = nodes.find((n) => n.id === active);
+      {active &&
+        (() => {
+          const activeNode = nodes.find((n) => n.id === active);
 
-        return activeNode ? (
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-            <span className="text-lg">{activeNode.provider === 'ollama' ? '🦙' : '🖥️'}</span>
-            <div className="flex-1">
-              <span className="text-sm font-medium text-purple-400">{activeNode.name}</span>
-              <span className="text-xs text-purple-400/60 ml-2">
-                {activeNode.host}:{activeNode.port}
-              </span>
+          return activeNode ? (
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <span className="text-lg">{activeNode.provider === 'ollama' ? '🦙' : '🖥️'}</span>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-purple-400">{activeNode.name}</span>
+                <span className="text-xs text-purple-400/60 ml-2">
+                  {activeNode.host}:{activeNode.port}
+                </span>
+              </div>
+              <span className="text-xs text-purple-400/60">LLM запросы идут сюда</span>
             </div>
-            <span className="text-xs text-purple-400/60">LLM запросы идут сюда</span>
-          </div>
-        ) : null;
-      })()}
+          ) : null;
+        })()}
 
       {/* Add form */}
       <AnimatePresence>

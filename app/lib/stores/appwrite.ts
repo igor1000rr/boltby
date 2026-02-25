@@ -99,6 +99,7 @@ export async function initAppwriteConnection() {
 
   // Reinitialize client with saved config
   resetClient();
+
   const c = getClient();
   c.setEndpoint(endpoint).setProject(projectId);
 
@@ -124,6 +125,7 @@ export function setAppwriteConfig(endpoint: string, projectId: string) {
   }
 
   resetClient();
+
   const c = getClient();
   c.setEndpoint(endpoint).setProject(projectId);
 

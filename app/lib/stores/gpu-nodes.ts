@@ -80,9 +80,7 @@ function updateProviderBaseUrl(node: GpuNode | null | undefined) {
     const hostPart = node.host.replace(/\/+$/, '');
 
     // Avoid double port: if host already has :port, use as-is
-    const baseUrl = hostPart.match(/:\d+$/)
-      ? `${proto}${hostPart}`
-      : `${proto}${hostPart}:${node.port}`;
+    const baseUrl = hostPart.match(/:\d+$/) ? `${proto}${hostPart}` : `${proto}${hostPart}:${node.port}`;
 
     // Update in-memory store → triggers useSettings → writes cookie for server
     updateProviderSettings(providerName, { enabled: true, baseUrl } as any);
@@ -201,7 +199,12 @@ export async function loadFromAppwrite(): Promise<void> {
   }
 }
 
-export async function addNode(node: Omit<GpuNode, 'id' | 'addedBy' | 'addedByName' | 'status' | 'latency' | 'modelCount' | 'lastChecked' | 'createdAt'>): Promise<GpuNode | null> {
+export async function addNode(
+  node: Omit<
+    GpuNode,
+    'id' | 'addedBy' | 'addedByName' | 'status' | 'latency' | 'modelCount' | 'lastChecked' | 'createdAt'
+  >,
+): Promise<GpuNode | null> {
   const userId = getUserId();
   const userName = getUserName();
 
@@ -226,15 +229,21 @@ export async function addNode(node: Omit<GpuNode, 'id' | 'addedBy' | 'addedByNam
         Permission.delete(Role.user(userId)),
       ];
 
-      const doc = await db.createDocument(DATABASE_ID, GPU_NODES_COLLECTION, ID.unique(), {
-        name: node.name,
-        host: node.host,
-        port: node.port,
-        provider: node.provider,
-        addedBy: userId,
-        addedByName: userName,
-        isPublic: node.isPublic ? 'true' : 'false',
-      }, perms);
+      const doc = await db.createDocument(
+        DATABASE_ID,
+        GPU_NODES_COLLECTION,
+        ID.unique(),
+        {
+          name: node.name,
+          host: node.host,
+          port: node.port,
+          provider: node.provider,
+          addedBy: userId,
+          addedByName: userName,
+          isPublic: node.isPublic ? 'true' : 'false',
+        },
+        perms,
+      );
 
       newNode.id = doc.$id;
     } catch (error) {
@@ -272,7 +281,10 @@ export async function removeNode(nodeId: string): Promise<void> {
   saveToCache(updated);
 }
 
-export async function updateNode(nodeId: string, updates: Partial<Pick<GpuNode, 'name' | 'host' | 'port' | 'provider' | 'isPublic'>>): Promise<void> {
+export async function updateNode(
+  nodeId: string,
+  updates: Partial<Pick<GpuNode, 'name' | 'host' | 'port' | 'provider' | 'isPublic'>>,
+): Promise<void> {
   if (isAppwriteReady() && !nodeId.startsWith('local_')) {
     try {
       const db = getDatabases();
@@ -343,9 +355,9 @@ export async function checkNode(nodeId: string): Promise<GpuNode | null> {
 
     return nodes.find((n) => n.id === nodeId) || null;
   } catch {
-    const nodes = gpuNodes.get().map((n) =>
-      n.id === nodeId ? { ...n, status: 'offline' as const, lastChecked: new Date().toISOString() } : n,
-    );
+    const nodes = gpuNodes
+      .get()
+      .map((n) => (n.id === nodeId ? { ...n, status: 'offline' as const, lastChecked: new Date().toISOString() } : n));
     gpuNodes.set(nodes);
     saveToCache(nodes);
 
@@ -392,10 +404,7 @@ export async function getNodeModels(nodeId: string): Promise<GpuNodeModel[]> {
 /**
  * Trigger model pull on a remote GPU node (through VPS proxy).
  */
-export async function pullModelOnNode(
-  nodeId: string,
-  modelName: string,
-): Promise<{ ok: boolean; message?: string }> {
+export async function pullModelOnNode(nodeId: string, modelName: string): Promise<{ ok: boolean; message?: string }> {
   const node = gpuNodes.get().find((n) => n.id === nodeId);
 
   if (!node) {

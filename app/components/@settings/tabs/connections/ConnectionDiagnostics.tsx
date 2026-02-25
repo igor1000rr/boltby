@@ -123,7 +123,8 @@ export default function ConnectionDiagnostics() {
       }
 
       // === Appwrite Checks ===
-      const appwriteEndpoint = localStorageChecks.appwriteConnection || getAppwriteEndpoint() || 'http://localhost:8080';
+      const appwriteEndpoint =
+        localStorageChecks.appwriteConnection || getAppwriteEndpoint() || 'http://localhost:8080';
       let appwriteCheck = null;
 
       try {

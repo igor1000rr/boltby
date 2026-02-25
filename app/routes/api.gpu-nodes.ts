@@ -25,10 +25,7 @@ function buildBaseUrl(host: string, port: string): string {
 }
 
 // In-memory pull tracking
-const pullJobs = new Map<
-  string,
-  { status: string; progress: number; total: number; error: string; done: boolean }
->();
+const pullJobs = new Map<string, { status: string; progress: number; total: number; error: string; done: boolean }>();
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -126,8 +123,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     case 'ps': {
       try {
         const r = await fetch(`${base}/api/ps`, { signal: AbortSignal.timeout(5000) });
-        if (!r.ok) return Response.json({ ok: false, error: `HTTP ${r.status}` });
-        return Response.json({ ok: true, ...(await r.json() as object) });
+
+        if (!r.ok) {
+          return Response.json({ ok: false, error: `HTTP ${r.status}` });
+        }
+
+        return Response.json({ ok: true, ...((await r.json()) as object) });
       } catch (e: any) {
         return Response.json({ ok: false, error: e.message });
       }
@@ -177,6 +178,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             }
 
             buf += dec.decode(value, { stream: true });
+
             const lines = buf.split('\n');
             buf = lines.pop() || '';
 

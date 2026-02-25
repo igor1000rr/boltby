@@ -268,10 +268,13 @@ export const Menu = () => {
   useEffect(() => {
     if (open) {
       loadEntries();
+
       // Pull from cloud once per session
       if (typeof window !== 'undefined' && !(window as any).__cloudPullDone) {
         (window as any).__cloudPullDone = true;
-        pullFromCloud().then(() => loadEntries()).catch(() => {});
+        pullFromCloud()
+          .then(() => loadEntries())
+          .catch(() => {});
       }
     }
   }, [open, loadEntries]);

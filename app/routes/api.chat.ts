@@ -96,10 +96,14 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         // Prepare GPU/RAM resources BEFORE any LLM call
         const ollamaBase =
           providerSettings?.Ollama?.baseUrl ||
-          envRecord.OLLAMA_API_BASE_URL || process?.env?.OLLAMA_API_BASE_URL || 'http://127.0.0.1:11434';
+          envRecord.OLLAMA_API_BASE_URL ||
+          process?.env?.OLLAMA_API_BASE_URL ||
+          'http://127.0.0.1:11434';
         const lmsBase =
           providerSettings?.LMStudio?.baseUrl ||
-          envRecord.LMSTUDIO_API_BASE_URL || process?.env?.LMSTUDIO_API_BASE_URL || 'http://127.0.0.1:1234';
+          envRecord.LMSTUDIO_API_BASE_URL ||
+          process?.env?.LMSTUDIO_API_BASE_URL ||
+          'http://127.0.0.1:1234';
 
         if (targetProviderName === 'Ollama') {
           dataStream.writeData({

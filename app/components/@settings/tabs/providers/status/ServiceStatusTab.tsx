@@ -50,78 +50,81 @@ const ServiceStatusTab = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const serviceConfigs = useMemo(() => getServiceConfigs(), []);
 
-  const checkService = useCallback(async (name: LocalServiceName): Promise<ServiceStatus> => {
-    const config = serviceConfigs[name];
-    const startTime = performance.now();
+  const checkService = useCallback(
+    async (name: LocalServiceName): Promise<ServiceStatus> => {
+      const config = serviceConfigs[name];
+      const startTime = performance.now();
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(config.url + config.healthPath, {
-        method: 'GET',
-        signal: controller.signal,
-      });
+        const response = await fetch(config.url + config.healthPath, {
+          method: 'GET',
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      const responseTime = performance.now() - startTime;
+        const responseTime = performance.now() - startTime;
 
-      let models: string[] = [];
-      let message = 'Service is running';
+        let models: string[] = [];
+        let message = 'Service is running';
 
-      if (response.ok) {
-        try {
-          const data = (await response.json()) as Record<string, unknown>;
+        if (response.ok) {
+          try {
+            const data = (await response.json()) as Record<string, unknown>;
 
-          if (name === 'Ollama' && Array.isArray(data.models)) {
-            models = (data.models as Array<{ name: string }>).map((m) => m.name);
-            message = `${models.length} model${models.length === 1 ? '' : 's'} available`;
-          } else if (name === 'LMStudio' && Array.isArray(data.data)) {
-            models = (data.data as Array<{ id: string }>).map((m) => m.id);
-            message = `${models.length} model${models.length === 1 ? '' : 's'} loaded`;
-          } else if (name === 'Appwrite') {
-            message = 'Backend is running';
+            if (name === 'Ollama' && Array.isArray(data.models)) {
+              models = (data.models as Array<{ name: string }>).map((m) => m.name);
+              message = `${models.length} model${models.length === 1 ? '' : 's'} available`;
+            } else if (name === 'LMStudio' && Array.isArray(data.data)) {
+              models = (data.data as Array<{ id: string }>).map((m) => m.id);
+              message = `${models.length} model${models.length === 1 ? '' : 's'} loaded`;
+            } else if (name === 'Appwrite') {
+              message = 'Backend is running';
+            }
+          } catch {
+            message = 'Service is running';
           }
-        } catch {
-          message = 'Service is running';
         }
-      }
 
-      if (!response.ok) {
+        if (!response.ok) {
+          return {
+            service: name,
+            status: 'offline',
+            lastChecked: new Date().toISOString(),
+            url: config.url,
+            icon: config.icon,
+            message: `Service returned HTTP ${response.status}`,
+            responseTime,
+          };
+        }
+
+        return {
+          service: name,
+          status: 'online',
+          lastChecked: new Date().toISOString(),
+          url: config.url,
+          icon: config.icon,
+          message,
+          responseTime,
+          models,
+        };
+      } catch {
         return {
           service: name,
           status: 'offline',
           lastChecked: new Date().toISOString(),
           url: config.url,
           icon: config.icon,
-          message: `Service returned HTTP ${response.status}`,
-          responseTime,
+          message: 'Service is not reachable',
+          responseTime: 0,
         };
       }
-
-      return {
-        service: name,
-        status: 'online',
-        lastChecked: new Date().toISOString(),
-        url: config.url,
-        icon: config.icon,
-        message,
-        responseTime,
-        models,
-      };
-    } catch {
-      return {
-        service: name,
-        status: 'offline',
-        lastChecked: new Date().toISOString(),
-        url: config.url,
-        icon: config.icon,
-        message: 'Service is not reachable',
-        responseTime: 0,
-      };
-    }
-  }, [serviceConfigs]);
+    },
+    [serviceConfigs],
+  );
 
   const fetchAllStatuses = useCallback(async () => {
     setLoading(true);

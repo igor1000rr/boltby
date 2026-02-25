@@ -29,8 +29,10 @@ const CHATS_COLLECTION = 'conversations';
 const MESSAGES_COLLECTION = 'messages';
 const SNAPSHOTS_COLLECTION = 'snapshots';
 
-// Appwrite string attribute is set to 1,000,000 chars in deploy script.
-// Leave margin for JSON overhead.
+/*
+ * Appwrite string attribute is set to 1,000,000 chars in deploy script.
+ * Leave margin for JSON overhead.
+ */
 const MAX_CONTENT_SIZE = 950_000;
 const MAX_RETRIES = 3;
 const PAGE_SIZE = 100;
@@ -58,7 +60,7 @@ async function processQueue() {
 
     try {
       await item.fn();
-    } catch (error) {
+    } catch {
       if (item.retries < MAX_RETRIES) {
         item.retries++;
 
@@ -93,11 +95,7 @@ function getUserPermissions(): string[] {
     return [];
   }
 
-  return [
-    Permission.read(Role.user(uid)),
-    Permission.update(Role.user(uid)),
-    Permission.delete(Role.user(uid)),
-  ];
+  return [Permission.read(Role.user(uid)), Permission.update(Role.user(uid)), Permission.delete(Role.user(uid))];
 }
 
 /**
@@ -238,8 +236,10 @@ async function doSyncChatToCloud(
     }
   }
 
-  // 3. Clean up old chunks if chunk count decreased
-  // Try to delete chunk indices beyond current count (best effort)
+  /*
+   * 3. Clean up old chunks if chunk count decreased
+   * Try to delete chunk indices beyond current count (best effort)
+   */
   for (let i = chunks.length; i < chunks.length + 5; i++) {
     try {
       await db.deleteDocument(DATABASE_ID, MESSAGES_COLLECTION, cloudMsgDocId(userId, chatId, i));
@@ -358,11 +358,7 @@ export async function pullFromCloud(): Promise<number> {
 
     // Paginated fetch of all remote conversations
     while (true) {
-      const queries = [
-        Query.equal('userId', userId),
-        Query.limit(PAGE_SIZE),
-        Query.orderDesc('updatedAt'),
-      ];
+      const queries = [Query.equal('userId', userId), Query.limit(PAGE_SIZE), Query.orderDesc('updatedAt')];
 
       if (cursor) {
         queries.push(Query.cursorAfter(cursor));

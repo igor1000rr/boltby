@@ -21,6 +21,7 @@ export function UserMenu() {
     };
 
     document.addEventListener('mousedown', handleClick);
+
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
@@ -78,7 +79,7 @@ export function UserMenu() {
         className={classNames(
           'flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all',
           'hover:bg-bolt-elements-background-depth-2',
-          showDropdown && 'bg-bolt-elements-background-depth-2',
+          showDropdown ? 'bg-bolt-elements-background-depth-2' : undefined,
         )}
       >
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white text-[10px] font-bold">
@@ -94,9 +95,7 @@ export function UserMenu() {
         <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-950 rounded-lg shadow-xl border border-bolt-elements-borderColor z-50 py-1 overflow-hidden">
           {/* User info */}
           <div className="px-3 py-2.5 border-b border-bolt-elements-borderColor">
-            <p className="text-sm font-medium text-bolt-elements-textPrimary truncate">
-              {user.name || 'Пользователь'}
-            </p>
+            <p className="text-sm font-medium text-bolt-elements-textPrimary truncate">{user.name || 'Пользователь'}</p>
             <p className="text-xs text-bolt-elements-textSecondary truncate">{user.email}</p>
           </div>
 

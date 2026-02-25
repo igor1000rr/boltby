@@ -1,7 +1,9 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/cloudflare';
 
-// VITE_APPWRITE_ENDPOINT includes /v1 (e.g., https://domain.com/v1)
-// For server-side REST, we use this directly since Appwrite SDK paths are relative to /v1
+/*
+ * VITE_APPWRITE_ENDPOINT includes /v1 (e.g., https://domain.com/v1)
+ * For server-side REST, we use this directly since Appwrite SDK paths are relative to /v1
+ */
 const APPWRITE_ENDPOINT = process.env.VITE_APPWRITE_ENDPOINT || '';
 const APPWRITE_PROJECT_ID = process.env.VITE_APPWRITE_PROJECT_ID || process.env.APPWRITE_PROJECT_ID || '';
 const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || '';

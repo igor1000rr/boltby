@@ -32,6 +32,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           if (password.length < 8) {
             toast.error('Пароль должен быть минимум 8 символов');
             setLoading(false);
+
             return;
           }
 
@@ -44,7 +45,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
         // Sync chats bidirectionally (non-blocking toast)
         fullSync()
-          .then(({ pulled, pushed }) => {
+          .then(({ pulled }) => {
             if (pulled > 0) {
               toast.info(`Загружено ${pulled} чатов из облака`);
             }
@@ -123,9 +124,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <div className="space-y-3">
                 {mode === 'register' && (
                   <div>
-                    <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">
-                      Имя
-                    </label>
+                    <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">Имя</label>
                     <input
                       type="text"
                       value={name}
@@ -137,9 +136,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">
-                    Email
-                  </label>
+                  <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">Email</label>
                   <input
                     type="email"
                     value={email}
@@ -151,9 +148,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">
-                    Пароль
-                  </label>
+                  <label className="block text-xs font-medium text-bolt-elements-textSecondary mb-1">Пароль</label>
                   <input
                     type="password"
                     value={password}
