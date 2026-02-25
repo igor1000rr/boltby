@@ -27,7 +27,7 @@ RUN mkdir -p /root/.config/.wrangler && \
 # Build with constrained memory (2GB VPS needs this low)
 # If building on VPS with 2GB, use swap (see deploy.sh)
 # If building on CI/local, this is fine
-RUN NODE_OPTIONS="--max-old-space-size=3072" pnpm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
 
 # ═══════════════════════════════════════
 # Stage 3: Production runtime (lightweight)
