@@ -1,0 +1,29 @@
+.Toastify__toast {
+  --at-apply: shadow-md;
+
+  background-color: var(--bolt-elements-bg-depth-2);
+  color: var(--bolt-elements-textPrimary);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 1px rgba(255, 215, 0, 0.15);
+}
+
+.Toastify__close-button {
+  color: var(--bolt-elements-item-contentDefault);
+  opacity: 1;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #ffd700;
+  }
+}
+
+.Toastify__progress-bar--success {
+  background: linear-gradient(90deg, #00ff88, #00e67a) !important;
+}
+
+.Toastify__progress-bar--error {
+  background: linear-gradient(90deg, #ff5252, #ff3838) !important;
+}

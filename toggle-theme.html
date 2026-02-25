@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toggle Theme</title>
+</head>
+<body>
+    <h1>Theme Toggle Test</h1>
+    <button onclick="toggleToDark()">Switch to Dark Mode</button>
+    <button onclick="toggleToLight()">Switch to Light Mode</button>
+    <p id="status"></p>
+    
+    <script>
+        function toggleToDark() {
+            localStorage.setItem('bolt_theme', 'dark');
+            document.getElementById('status').textContent = 'Theme set to dark. Please reload http://localhost:5173/';
+            
+            // Also try to update user profile
+            try {
+                const userProfile = localStorage.getItem('bolt_user_profile');
+                if (userProfile) {
+                    const profile = JSON.parse(userProfile);
+                    profile.theme = 'dark';
+                    localStorage.setItem('bolt_user_profile', JSON.stringify(profile));
+                }
+            } catch (e) {}
+        }
+        
+        function toggleToLight() {
+            localStorage.setItem('bolt_theme', 'light');
+            document.getElementById('status').textContent = 'Theme set to light. Please reload http://localhost:5173/';
+            
+            // Also try to update user profile
+            try {
+                const userProfile = localStorage.getItem('bolt_user_profile');
+                if (userProfile) {
+                    const profile = JSON.parse(userProfile);
+                    profile.theme = 'light';
+                    localStorage.setItem('bolt_user_profile', JSON.stringify(profile));
+                }
+            } catch (e) {}
+        }
+        
+        // Display current theme
+        window.onload = function() {
+            const currentTheme = localStorage.getItem('bolt_theme') || 'light';
+            document.getElementById('status').textContent = 'Current theme: ' + currentTheme;
+        }
+    </script>
+</body>
+</html>

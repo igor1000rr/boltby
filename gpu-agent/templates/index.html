@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boltby GPU Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#0a0c10;--bg1:#11141b;--bg2:#181c26;--bg3:#1f2533;--bg4:#283040;
+  --bd:#252d3d;--bd2:#2e3850;
+  --t1:#e4e9f2;--t2:#8592a8;--t3:#586580;--t4:#3e4c64;
+  --purple:#a78bfa;--purpleBg:rgba(167,139,250,.08);--purpleBd:rgba(167,139,250,.22);
+  --green:#34d399;--greenBg:rgba(52,211,153,.08);--greenBd:rgba(52,211,153,.2);
+  --red:#f87171;--redBg:rgba(248,113,113,.08);--redBd:rgba(248,113,113,.2);
+  --yellow:#fbbf24;--yellowBg:rgba(251,191,36,.08);
+  --blue:#60a5fa;--blueBg:rgba(96,165,250,.08);
+  --r:10px;--rs:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg0);color:var(--t1);font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.55}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+a{color:var(--purple);text-decoration:none}
+
+/* ── Layout ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.side{width:210px;background:var(--bg1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.side-head{padding:16px 14px 12px;border-bottom:1px solid var(--bd)}
+.side-head h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.side-head .ver{font-size:10px;color:var(--t3);margin-top:1px;font-weight:400}
+.nav{flex:1;padding:6px;overflow-y:auto}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--rs);cursor:pointer;color:var(--t2);font-size:12.5px;font-weight:500;transition:.12s;user-select:none}
+.ni:hover{background:var(--bg2);color:var(--t1)}
+.ni.on{background:var(--purpleBg);color:var(--purple)}
+.ni .ic{font-size:17px;width:20px;text-align:center;flex-shrink:0}
+.ni .badge{margin-left:auto;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;line-height:1.4}
+.badge-g{background:var(--greenBg);color:var(--green)}.badge-r{background:var(--redBg);color:var(--red)}.badge-y{background:var(--yellowBg);color:var(--yellow)}
+
+.main{flex:1;overflow-y:auto;padding:20px 28px 40px}
+.page{display:none}.page.on{display:block}
+.pt{font-size:18px;font-weight:700;margin-bottom:3px}
+.pd{font-size:12px;color:var(--t2);margin-bottom:18px}
+
+/* ── Cards ── */
+.card{background:var(--bg1);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.card-t{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.grid{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}.ga{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+
+.stat{background:var(--bg2);border-radius:var(--rs);padding:12px 14px}
+.stat-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.stat-v{font-size:20px;font-weight:700;margin:2px 0 0;line-height:1.2}
+.stat-s{font-size:10px;color:var(--t4);margin-top:2px}
+.c-g{color:var(--green)}.c-r{color:var(--red)}.c-p{color:var(--purple)}.c-y{color:var(--yellow)}.c-b{color:var(--blue)}
+
+/* ── VRAM Bar ── */
+.vbar{height:7px;background:var(--bg4);border-radius:4px;margin-top:6px;overflow:hidden}
+.vbar-f{height:100%;border-radius:4px;transition:width .5s}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg2);color:var(--t1);font-size:12px;font-weight:500;cursor:pointer;transition:.12s;font-family:inherit}
+.btn:hover{background:var(--bg3)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--purpleBg);color:var(--purple);border-color:var(--purpleBd)}.btn-p:hover{background:rgba(167,139,250,.16)}
+.btn-g{background:var(--greenBg);color:var(--green);border-color:var(--greenBd)}.btn-g:hover{background:rgba(52,211,153,.15)}
+.btn-r{background:var(--redBg);color:var(--red);border-color:var(--redBd)}
+.btn-y{background:var(--yellowBg);color:var(--yellow);border-color:rgba(251,191,36,.2)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ── Inputs ── */
+.inp{width:100%;padding:8px 11px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);color:var(--t1);font-size:12.5px;font-family:inherit;outline:none;transition:.12s}
+.inp:focus{border-color:var(--purple)}.inp::placeholder{color:var(--t4)}
+.fld{margin-bottom:10px}.fld label{display:block;font-size:11px;color:var(--t3);margin-bottom:3px;font-weight:600}
+.fld-r{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);cursor:pointer}.chk input{accent-color:var(--purple)}
+
+/* ── Misc ── */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}.dot-g{background:var(--green);box-shadow:0 0 5px var(--green)}.dot-r{background:var(--red)}.dot-y{background:var(--yellow)}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600}
+.tag-g{background:var(--greenBg);color:var(--green)}.tag-r{background:var(--redBg);color:var(--red)}.tag-p{background:var(--purpleBg);color:var(--purple)}.tag-y{background:var(--yellowBg);color:var(--yellow)}
+
+.mc{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--rs);margin-bottom:5px;border:1px solid transparent}
+.mc:hover{border-color:var(--bd)}
+.log{background:var(--bg0);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;max-height:350px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);line-height:1.7;white-space:pre-wrap;word-break:break-all}
+
+/* Pull progress */
+.pbar{height:5px;background:var(--bg4);border-radius:3px;margin:6px 0;overflow:hidden}
+.pbar-f{height:100%;background:var(--purple);border-radius:3px;transition:width .3s;width:0}
+.pstat{font-size:11px;color:var(--t2);margin-top:3px}
+
+/* Toast */
+.toast{position:fixed;top:16px;right:16px;padding:10px 16px;border-radius:var(--rs);font-size:12px;font-weight:500;z-index:999;animation:tsIn .25s;pointer-events:none}
+.toast-g{background:var(--greenBg);color:var(--green);border:1px solid var(--greenBd)}
+.toast-r{background:var(--redBg);color:var(--red);border:1px solid var(--redBd)}
+@keyframes tsIn{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+
+/* Popular model cards */
+.pm{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;cursor:pointer;transition:.12s}
+.pm:hover{border-color:var(--purpleBd);background:var(--purpleBg)}
+.pm-n{font-weight:600;font-size:12px}.pm-d{font-size:10px;color:var(--t3);margin-top:2px}.pm-v{font-size:10px;color:var(--t4);margin-top:1px}
+
+/* IP card */
+.ip-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd2)}
+.ip-row:last-child{border-bottom:none}
+.ip-val{font-family:'JetBrains Mono',monospace;font-size:12px;user-select:all}
+.ip-tag{font-size:10px;color:var(--t3);min-width:70px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="side">
+  <div class="side-head"><h1>⚡ Boltby GPU</h1><div class="ver">v{{ version }}</div></div>
+  <div class="nav">
+    <div class="ni on" data-p="dash"><span class="ic">📊</span>Дашборд<span class="badge badge-g" id="b-gpu"></span></div>
+    <div class="ni" data-p="ollama"><span class="ic">🦙</span>Ollama<span class="badge" id="b-olla"></span></div>
+    <div class="ni" data-p="models"><span class="ic">🧠</span>Модели</div>
+    <div class="ni" data-p="net"><span class="ic">🌐</span>Сеть / IP</div>
+    <div class="ni" data-p="vps"><span class="ic">🔗</span>VPS</div>
+    <div class="ni" data-p="wg"><span class="ic">🔒</span>WireGuard</div>
+    <div class="ni" data-p="settings"><span class="ic">⚙️</span>Настройки</div>
+    <div class="ni" data-p="logs"><span class="ic">📝</span>Логи</div>
+  </div>
+</div>
+<div class="main">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="page on" id="p-dash">
+<div class="pt">Дашборд</div><div class="pd">Состояние GPU машины</div>
+<div class="card"><div class="card-t">GPU</div><div id="d-gpu"></div></div>
+<div class="card"><div class="card-t">Сервисы</div><div class="grid ga" id="d-svc"></div></div>
+<div class="card"><div class="card-t">Система</div><div class="grid ga" id="d-sys"></div></div>
+</div>
+
+<!-- ═══ OLLAMA ═══ -->
+<div class="page" id="p-ollama">
+<div class="pt">Ollama</div><div class="pd">Управление LLM сервером</div>
+<div class="card" id="olla-info"></div>
+<div class="card"><div class="card-t">Управление</div>
+  <div class="btns">
+    <button class="btn btn-g" onclick="ollaAct('start')">▶ Запустить</button>
+    <button class="btn btn-r" onclick="ollaAct('stop')">⏹ Остановить</button>
+    <button class="btn" onclick="ollaAct('restart')">🔄 Перезапустить</button>
+  </div>
+</div>
+<div class="card" id="olla-install-card" style="display:none">
+  <div class="card-t">Установка</div>
+  <p style="color:var(--t2);margin-bottom:10px;font-size:12px">Ollama не установлен. Установить одной кнопкой:</p>
+  <button class="btn btn-p" onclick="ollaInstall()">📦 Установить Ollama</button>
+  <div id="olla-install-out" class="log" style="margin-top:10px;display:none"></div>
+</div>
+<div class="card"><div class="card-t">Модели в VRAM</div><div id="olla-running"></div></div>
+</div>
+
+<!-- ═══ MODELS ═══ -->
+<div class="page" id="p-models">
+<div class="pt">Модели</div><div class="pd">Скачивай и управляй LLM моделями</div>
+<div class="card"><div class="card-t">Скачать модель</div>
+  <div style="display:flex;gap:6px"><input class="inp" id="pull-name" placeholder="qwen2.5-coder:32b" style="flex:1"><button class="btn btn-p" onclick="pullModel()">📥 Скачать</button></div>
+  <div id="pull-prog" style="display:none"><div class="pbar"><div class="pbar-f" id="pull-bar"></div></div><div class="pstat" id="pull-stat"></div></div>
+</div>
+<div class="card"><div class="card-t">Быстрая установка</div><div class="grid ga" id="pop-models"></div></div>
+<div class="card"><div class="card-t">🔄 Синхронизация с VPS</div>
+  <div id="sync-info" style="font-size:12px;color:var(--t2);margin-bottom:8px">Нет подключённых VPS</div>
+  <div id="sync-models" class="grid ga"></div>
+  <button class="btn btn-sm" onclick="syncRefresh()" style="margin-top:8px">🔄 Обновить из VPS</button>
+</div>
+<div class="card"><div class="card-t">Установленные</div><div id="model-list"></div></div>
+</div>
+
+<!-- ═══ NETWORK ═══ -->
+<div class="page" id="p-net">
+<div class="pt">Сеть и IP адреса</div><div class="pd">Адреса этой машины и состояние файрвола</div>
+<div class="card"><div class="card-t">IP адреса</div><div id="net-ips"></div></div>
+<div class="card"><div class="card-t">Файрвол</div><div id="net-fw"></div></div>
+<div class="card"><div class="card-t">Инструкция для VPS</div>
+  <div style="font-size:12px;color:var(--t2);line-height:1.8">
+    <p>На VPS в Boltby: <strong>Settings → GPU Nodes → Добавить ноду</strong></p>
+    <p>Укажи IP этой машины и порт — нода появится на VPS.</p>
+    <p style="margin-top:6px;color:var(--t3)">Если VPS не видит эту машину напрямую — настрой WireGuard туннель.</p>
+  </div>
+</div>
+</div>
+
+<!-- ═══ VPS ═══ -->
+<div class="page" id="p-vps">
+<div class="pt">VPS подключения</div><div class="pd">Boltby инстансы которые используют эту GPU машину</div>
+<div class="card"><div class="card-t">Добавить</div>
+  <div class="fld-r"><div class="fld"><label>Название</label><input class="inp" id="vps-n" placeholder="Мой VPS"></div><div class="fld"><label>URL Boltby</label><input class="inp" id="vps-u" placeholder="https://boltby.example.com"></div></div>
+  <div class="btns" style="margin-top:4px"><button class="btn btn-p" onclick="vpsAdd()">➕ Добавить</button><button class="btn" onclick="vpsTest()">🔍 Проверить</button></div>
+  <div id="vps-msg" style="margin-top:6px;font-size:11px"></div>
+</div>
+<div class="card"><div class="card-t">Подключения</div><div id="vps-list"></div></div>
+</div>
+
+<!-- ═══ WIREGUARD ═══ -->
+<div class="page" id="p-wg">
+<div class="pt">WireGuard</div><div class="pd">VPN туннель до VPS</div>
+<div class="card" id="wg-info"></div>
+<div class="card"><div class="card-t">Настройка туннеля</div>
+  <div class="fld-r"><div class="fld"><label>IP адрес VPS</label><input class="inp" id="wg-ip" placeholder="45.87.219.104"></div><div class="fld"><label>Public Key VPS</label><input class="inp" id="wg-pk" placeholder="abc123...="></div></div>
+  <div class="btns" style="margin-top:4px">
+    <button class="btn btn-p" onclick="wgSetup()">🔧 Настроить</button>
+    <button class="btn btn-g" onclick="wgUp()">▶ Включить</button>
+    <button class="btn btn-r" onclick="wgDown()">⏹ Выключить</button>
+  </div>
+  <div id="wg-msg" style="margin-top:8px;font-size:11px"></div>
+</div>
+<div class="card" id="wg-inst" style="display:none"><div class="card-t">Установка</div>
+  <p style="color:var(--t2);font-size:12px;margin-bottom:8px">WireGuard не установлен.</p>
+  <button class="btn btn-p" onclick="wgInstall()">📦 Установить WireGuard</button>
+</div>
+<div class="card"><div class="card-t">Как это работает</div>
+  <div style="font-size:12px;color:var(--t2);line-height:1.8">
+    <p>WireGuard создаёт VPN туннель: VPS видит эту машину по IP <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">10.7.0.2</code></p>
+    <p>На VPS тоже нужно настроить WireGuard (tunnel-setup.sh или вручную).</p>
+    <p>После настройки обменяйтесь public key и укажите IP друг друга.</p>
+  </div>
+</div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div class="page" id="p-settings">
+<div class="pt">Настройки</div><div class="pd">Конфигурация GPU агента</div>
+<div class="card"><div class="card-t">Ollama</div>
+  <div class="fld-r"><div class="fld"><label>Хост (bind)</label><input class="inp" id="s-host" value="0.0.0.0"></div><div class="fld"><label>Порт</label><input class="inp" id="s-port" value="11434"></div></div>
+  <label class="chk" style="margin:8px 0"><input type="checkbox" id="s-auto-olla" checked> Автозапуск Ollama при старте агента</label>
+</div>
+<div class="card"><div class="card-t">Агент</div>
+  <label class="chk" style="margin:6px 0"><input type="checkbox" id="s-auto-agent"> Автозапуск агента при входе в систему</label>
+  <div class="btns" style="margin-top:10px">
+    <button class="btn btn-p" onclick="saveSettings()">💾 Сохранить всё</button>
+    <button class="btn btn-g" onclick="enableAutostart()">🔄 Включить автозапуск</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══ LOGS ═══ -->
+<div class="page" id="p-logs">
+<div class="pt">Логи</div><div class="pd">Журнал событий</div>
+<div class="card"><div class="btns" style="margin-bottom:8px"><button class="btn btn-sm" onclick="loadLogs()">🔄 Обновить</button></div><div class="log" id="log-out">Загрузка...</div></div>
+</div>
+
+</div>
+</div>
+
+<script>
+const A='';let DI;
+function H(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+// ── Nav ──
+document.querySelectorAll('.ni').forEach(n=>{
+  n.onclick=()=>{
+    document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+    n.classList.add('on');
+    document.getElementById('p-'+n.dataset.p).classList.add('on');
+    const p=n.dataset.p;
+    if(p==='models')loadModels();if(p==='net')loadNet();if(p==='vps')loadVps();
+    if(p==='wg')loadWg();if(p==='settings')loadSettings();if(p==='logs')loadLogs();
+  };
+});
+
+function toast(m,t='g'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2500)}
+async function J(u,o){const r=await fetch(A+u,o);return r.json()}
+async function P(u,b){return J(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})}
+
+// ══ DASHBOARD ══
+async function dash(){
+  try{
+    const d=await J('/api/dashboard');
+    // GPU
+    const gs=d.gpu?.gpus||[];
+    if(gs.length){
+      const g=gs[0],pct=g.vram_pct,bc=pct>90?'var(--red)':pct>70?'var(--yellow)':'var(--green)';
+      document.getElementById('d-gpu').innerHTML=`
+        <div class="grid g4">
+          <div class="stat"><div class="stat-l">GPU</div><div class="stat-v" style="font-size:14px">${g.name}</div><div class="stat-s">Driver ${g.driver}</div></div>
+          <div class="stat"><div class="stat-l">VRAM</div><div class="stat-v c-p">${g.vram_used}/${g.vram_total}MB</div><div class="vbar"><div class="vbar-f" style="width:${pct}%;background:${bc}"></div></div><div class="stat-s">${pct}% \u00b7 ${g.vram_free}MB \u0441\u0432\u043e\u0431\u043e\u0434\u043d\u043e</div></div>
+          <div class="stat"><div class="stat-l">\u0422\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440\u0430</div><div class="stat-v ${g.temp>80?'c-r':g.temp>65?'c-y':'c-g'}">${g.temp}\u00b0C</div><div class="stat-s">Fan: ${g.fan}%</div></div>
+          <div class="stat"><div class="stat-l">\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430</div><div class="stat-v ${g.util>90?'c-r':g.util>50?'c-y':'c-g'}">${g.util}%</div><div class="stat-s">${g.power}W / ${g.power_limit}W</div></div>
+        </div>`;
+      const bb=document.getElementById('b-gpu');bb.textContent=g.temp+'\u00b0';bb.className='badge '+(g.temp>80?'badge-r':'badge-g');
+    } else {
+      document.getElementById('d-gpu').innerHTML='<div class="stat"><div class="stat-l">GPU</div><div class="stat-v c-r">\u041d\u0435 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d</div></div>';
+    }
+    // Services
+    const o=d.ollama||{},w=d.wireguard||{},fw=d.firewall||{};
+    document.getElementById('d-svc').innerHTML=`
+      <div class="stat"><div class="stat-l">Ollama</div><div class="stat-v ${o.running?'c-g':'c-r'}">${o.running?'\u0420\u0430\u0431\u043e\u0442\u0430\u0435\u0442':'\u0421\u0442\u043e\u043f'}</div><div class="stat-s">${o.installed?'v'+o.version+' \u00b7 '+o.models+' \u043c\u043e\u0434\u0435\u043b\u0435\u0439':'\u041d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d'}</div></div>
+      <div class="stat"><div class="stat-l">WireGuard</div><div class="stat-v ${w.active?'c-g':'c-y'}">${w.active?'\u0410\u043a\u0442\u0438\u0432\u0435\u043d':'\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d'}</div><div class="stat-s">${w.installed?'\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d':'\u041d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d'}</div></div>
+      <div class="stat"><div class="stat-l">\u0424\u0430\u0439\u0440\u0432\u043e\u043b</div><div class="stat-v ${fw.open?'c-g':'c-y'}">${fw.open?'\u041f\u043e\u0440\u0442 \u043e\u0442\u043a\u0440\u044b\u0442':'\u041f\u043e\u0440\u0442 \u0437\u0430\u043a\u0440\u044b\u0442'}</div><div class="stat-s">${fw.type==='none'?'\u041d\u0435\u0442 \u0444\u0430\u0439\u0440\u0432\u043e\u043b\u0430':fw.type} \u00b7 \u043f\u043e\u0440\u0442 ${d.config?.port||11434}</div></div>
+      <div class="stat"><div class="stat-l">VPS</div><div class="stat-v c-p">${d.config?.vps_count||0}</div><div class="stat-s">\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439</div></div>`;
+    const ob=document.getElementById('b-olla');ob.textContent=o.running?'ON':'OFF';ob.className='badge '+(o.running?'badge-g':'badge-r');
+    // System
+    const s=d.system||{};
+    document.getElementById('d-sys').innerHTML=`
+      <div class="stat"><div class="stat-l">\u0425\u043e\u0441\u0442</div><div class="stat-v" style="font-size:13px">${s.hostname||'?'}</div><div class="stat-s">${s.os||''}</div></div>
+      <div class="stat"><div class="stat-l">IP</div><div class="stat-v" style="font-size:13px">${s.ip||'?'}</div></div>
+      <div class="stat"><div class="stat-l">RAM</div><div class="stat-v">${s.ram_total?Math.round(s.ram_total/1024)+'GB':'?'}</div><div class="stat-s">${s.ram_used?Math.round(s.ram_used/1024)+'GB':'?'} \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u043e</div></div>
+      <div class="stat"><div class="stat-l">CPU</div><div class="stat-v">${s.cpus||'?'}</div><div class="stat-s">\u044f\u0434\u0435\u0440 \u00b7 ${s.kernel||''}</div></div>`;
+    // Ollama page
+    document.getElementById('olla-info').innerHTML=`
+      <div class="grid g3">
+        <div class="stat"><div class="stat-l">\u0421\u0442\u0430\u0442\u0443\u0441</div><div class="stat-v ${o.running?'c-g':'c-r'}">${o.running?'\u25cf  \u0420\u0430\u0431\u043e\u0442\u0430\u0435\u0442':'\u25cb  \u041e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d'}</div></div>
+        <div class="stat"><div class="stat-l">\u0412\u0435\u0440\u0441\u0438\u044f</div><div class="stat-v" style="font-size:14px">${o.version||'\u2014'}</div></div>
+        <div class="stat"><div class="stat-l">\u041c\u043e\u0434\u0435\u043b\u0435\u0439</div><div class="stat-v c-p">${o.models}</div></div>
+      </div>`;
+    document.getElementById('olla-install-card').style.display=o.installed?'none':'block';
+  }catch(e){console.error(e)}
+}
+
+// \u2550\u2550 Ollama \u2550\u2550
+async function ollaAct(a){toast('\u0412\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f...');await P('/api/ollama/'+a);setTimeout(dash,1500);toast('\u0413\u043e\u0442\u043e\u0432\u043e')}
+async function ollaInstall(){const o=document.getElementById('olla-install-out');o.style.display='block';o.textContent='\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430...\n';const d=await P('/api/ollama/install');o.textContent+=d.output+'\n'+(d.ok?'\u2705 \u0413\u043e\u0442\u043e\u0432\u043e':'\u274c \u041e\u0448\u0438\u0431\u043a\u0430');dash()}
+
+// \u2550\u2550 MODELS \u2550\u2550
+async function loadModels(){
+  const d=await J('/api/models');
+  const ms=d.models||[],rn=d.running||[];
+  const rnSet=new Set(rn.map(m=>m.name||m.model));
+  const installed=new Set(ms.map(m=>m.name));
+
+  // Installed list
+  document.getElementById('model-list').innerHTML=ms.length?ms.map(m=>`
+    <div class="mc"><div><div style="font-weight:600;font-size:12px">${m.name} ${rnSet.has(m.name)?'<span class="dot dot-g"></span>':''}</div><div style="font-size:10px;color:var(--t3)">${m.params} \u00b7 ${m.family} \u00b7 ${m.quant}</div></div>
+    <div style="display:flex;align-items:center;gap:6px"><span class="mono" style="color:var(--t2)">${m.gb}GB</span>${rnSet.has(m.name)?'<button class="btn btn-sm" onclick="unload(\''+m.name+'\')">\u23cf</button>':''}<button class="btn btn-sm btn-r" onclick="delModel(\''+m.name+'\')">\ud83d\uddd1</button></div></div>`).join(''):'<div style="color:var(--t3);font-size:12px;padding:10px">\u041d\u0435\u0442 \u043c\u043e\u0434\u0435\u043b\u0435\u0439</div>';
+
+  // Running models (Ollama page)
+  document.getElementById('olla-running').innerHTML=rn.length?rn.map(m=>`<div class="mc"><div style="font-weight:500;font-size:12px"><span class="dot dot-g"></span> ${m.name||m.model}</div><button class="btn btn-sm" onclick="unload('${m.name||m.model}')">\u23cf \u0412\u044b\u0433\u0440\u0443\u0437\u0438\u0442\u044c</button></div>`).join(''):'<div style="color:var(--t3);font-size:12px">\u041d\u0435\u0442 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u043d\u044b\u0445 \u043c\u043e\u0434\u0435\u043b\u0435\u0439</div>';
+
+  // Popular models
+  try{
+    const pop=await J('/api/models/popular');
+    document.getElementById('pop-models').innerHTML=(pop||[]).map(p=>{
+      const have=installed.has(p.name);
+      return `<div class="pm" onclick="${have?'':("quickPull('"+p.name+"')")}">
+        <div class="pm-n">${p.name} ${have?'<span class="tag tag-g">\u2713</span>':''}</div>
+        <div class="pm-d">${p.desc}</div><div class="pm-v">VRAM: ${p.vram}</div></div>`;
+    }).join('');
+  }catch(e){}
+
+  // VPS Sync
+  loadSync(installed);
+}
+
+// \u2550\u2550 VPS MODEL SYNC \u2550\u2550
+async function loadSync(installedSet){
+  try{
+    const d=await J('/api/sync/desired');
+    const desired=d.desired||[];
+    const missing=d.missing||[];
+    if(!desired.length){
+      document.getElementById('sync-info').innerHTML='\u041d\u0435\u0442 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0451\u043d\u043d\u044b\u0445 VPS \u0438\u043b\u0438 VPS \u043d\u0435 \u043e\u0442\u0432\u0435\u0447\u0430\u0435\u0442';
+      document.getElementById('sync-models').innerHTML='';
+      return;
+    }
+    const allOk=missing.length===0;
+    document.getElementById('sync-info').innerHTML=allOk
+      ?'<span class="c-g">\u2705 \u0412\u0441\u0435 \u043c\u043e\u0434\u0435\u043b\u0438 VPS \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u043d\u044b</span>'
+      :'<span class="c-y">\u26a0\ufe0f '+missing.length+' \u043c\u043e\u0434\u0435\u043b\u0435\u0439 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044e\u0442 (\u043d\u0443\u0436\u043d\u044b VPS)</span>';
+    document.getElementById('sync-models').innerHTML=desired.map(m=>{
+      const have=installedSet&&installedSet.has(m.name);
+      return `<div class="pm" style="${have?'':'cursor:pointer'}" onclick="${have?'':("quickPull('"+H(m.name)+"'"+')')}">
+        <div class="pm-n">${H(m.name)} ${have?'<span class="tag tag-g">\u2713</span>':'<span class="tag tag-r">\u2717</span>'}</div>
+        <div class="pm-d">${H(m.source||'VPS')}</div>
+        <div class="pm-v">${have?'\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0430':'\u041d\u0430\u0436\u043c\u0438 \u0447\u0442\u043e\u0431\u044b \u0441\u043a\u0430\u0447\u0430\u0442\u044c'}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('sync-info').textContent='\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u0438';
+  }
+}
+
+async function syncRefresh(){
+  toast('\u0421\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u044f \u0441 VPS...');
+  await P('/api/sync/refresh');
+  loadModels();
+  toast('\u0413\u043e\u0442\u043e\u0432\u043e');
+}
+
+function quickPull(n){document.getElementById('pull-name').value=n;pullModel()}
+
+async function pullModel(){
+  const n=document.getElementById('pull-name').value.trim();if(!n)return;
+  const pg=document.getElementById('pull-prog'),bar=document.getElementById('pull-bar'),st=document.getElementById('pull-stat');
+  pg.style.display='block';st.textContent='\u041d\u0430\u0447\u0438\u043d\u0430\u0435\u043c...';bar.style.width='0%';
+  const r=await fetch(A+'/api/models/pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})});
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+  while(true){
+    const{done,value}=await rd.read();if(done)break;
+    buf+=dec.decode(value,{stream:true});const ls=buf.split('\n');buf=ls.pop();
+    for(const l of ls){if(!l.trim())continue;try{const d=JSON.parse(l);
+      if(d.error){st.textContent='\u274c '+d.error;return}
+      if(d.total&&d.completed){const p=Math.round(d.completed/d.total*100);bar.style.width=p+'%';st.textContent=`${d.status||''} ${p}% (${(d.completed/1048576|0)}/${(d.total/1048576|0)}MB)`}
+      else st.textContent=d.status||'...'
+    }catch(e){}}
+  }
+  st.textContent='\u2705 \u0413\u043e\u0442\u043e\u0432\u043e!';toast('\u041c\u043e\u0434\u0435\u043b\u044c '+n+' \u0441\u043a\u0430\u0447\u0430\u043d\u0430!');loadModels();dash()
+}
+
+async function delModel(n){if(!confirm('\u0423\u0434\u0430\u043b\u0438\u0442\u044c '+n+'?'))return;await P('/api/models/delete',{name:n});toast('\u0423\u0434\u0430\u043b\u0435\u043d\u043e');loadModels();dash()}
+async function unload(n){await P('/api/models/unload',{name:n});toast('\u0412\u044b\u0433\u0440\u0443\u0436\u0435\u043d\u043e \u0438\u0437 VRAM');loadModels();setTimeout(dash,2000)}
+
+// \u2550\u2550 NETWORK \u2550\u2550
+async function loadNet(){
+  const d=await J('/api/network');
+  const ips=d.ips||{};
+  let h='';
+  if(ips.wireguard?.length)ips.wireguard.forEach(i=>{h+=`<div class="ip-row"><span class="ip-tag tag tag-g">WireGuard</span><span class="ip-val">${i.ip}</span><span style="color:var(--t3);font-size:10px">${i.iface}</span></div>`});
+  if(ips.external)h+=`<div class="ip-row"><span class="ip-tag tag tag-p">\u0412\u043d\u0435\u0448\u043d\u0438\u0439</span><span class="ip-val">${ips.external}</span></div>`;
+  if(ips.private?.length)ips.private.forEach(i=>{h+=`<div class="ip-row"><span class="ip-tag tag tag-y">\u041b\u043e\u043a\u0430\u043b\u044c\u043d\u044b\u0439</span><span class="ip-val">${i.ip}</span><span style="color:var(--t3);font-size:10px">${i.iface}</span></div>`});
+  document.getElementById('net-ips').innerHTML=h||'<div style="color:var(--t3);font-size:12px">\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c</div>';
+  const fw=d.firewall||{};
+  document.getElementById('net-fw').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span class="dot ${fw.open?'dot-g':'dot-y'}"></span>
+      <span style="font-size:13px;font-weight:500">${fw.open?'\u041f\u043e\u0440\u0442 '+d.port+' \u043e\u0442\u043a\u0440\u044b\u0442':'\u041f\u043e\u0440\u0442 '+d.port+' \u0437\u0430\u043a\u0440\u044b\u0442'}</span>
+      <span style="font-size:11px;color:var(--t3)">${fw.type==='none'?'\u0424\u0430\u0439\u0440\u0432\u043e\u043b \u043d\u0435 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d':fw.type}</span>
+    </div>
+    ${!fw.open?'<button class="btn btn-g" onclick="openFw()">\ud83d\udd13 \u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u0440\u0442 '+d.port+'</button>':''}`;
+}
+async function openFw(){const d=await P('/api/firewall/open');toast(d.ok?'\u041f\u043e\u0440\u0442 \u043e\u0442\u043a\u0440\u044b\u0442':'\u041e\u0448\u0438\u0431\u043a\u0430',d.ok?'g':'r');loadNet();dash()}
+
+// \u2550\u2550 VPS \u2550\u2550
+async function loadVps(){
+  const list=await J('/api/vps');
+  const el=document.getElementById('vps-list');
+  if(!list.length){el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">\u041d\u0435\u0442 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439</div>';return}
+  el.innerHTML=list.map((v,i)=>`
+    <div class="mc"><div style="display:flex;align-items:center;gap:8px"><span class="dot ${v.reachable?'dot-g':'dot-r'}"></span><div><div style="font-weight:500;font-size:12px">${H(v.name||'VPS')}</div><div style="font-size:10px;color:var(--t3)">${H(v.url)} \u00b7 ${H(v.message||'')}</div></div></div>
+    <button class="btn btn-sm btn-r" data-delidx="${i}">\ud83d\uddd1</button></div>`).join('');
+  el.querySelectorAll('[data-delidx]').forEach(btn=>{
+    const idx=parseInt(btn.dataset.delidx);
+    btn.onclick=()=>vpsDel(list[idx].url);
+  });
+}
+async function vpsAdd(){
+  const n=document.getElementById('vps-n').value.trim(),u=document.getElementById('vps-u').value.trim();
+  if(!u)return toast('\u0423\u043a\u0430\u0436\u0438 URL','r');
+  await P('/api/vps/add',{name:n,url:u});toast('\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e');loadVps()
+}
+async function vpsDel(u){await P('/api/vps/remove',{url:u});toast('\u0423\u0434\u0430\u043b\u0435\u043d\u043e');loadVps()}
+async function vpsTest(){
+  const u=document.getElementById('vps-u').value.trim();if(!u)return;
+  document.getElementById('vps-msg').innerHTML='\u23f3 \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u044e...';
+  const d=await P('/api/vps/test',{url:u});
+  document.getElementById('vps-msg').innerHTML=d.ok?'<span class="c-g">\u2705 \u0414\u043e\u0441\u0442\u0443\u043f\u0435\u043d</span>':'<span class="c-r">\u274c '+H(d.msg||'')+'</span>';
+}
+
+// \u2550\u2550 WIREGUARD \u2550\u2550
+async function loadWg(){
+  const d=await J('/api/wg/status');
+  document.getElementById('wg-inst').style.display=d.installed?'none':'block';
+  document.getElementById('wg-info').innerHTML=`
+    <div class="grid g3">
+      <div class="stat"><div class="stat-l">\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d</div><div class="stat-v ${d.installed?'c-g':'c-r'}">${d.installed?'\u0414\u0430':'\u041d\u0435\u0442'}</div></div>
+      <div class="stat"><div class="stat-l">\u0422\u0443\u043d\u043d\u0435\u043b\u044c</div><div class="stat-v ${d.active?'c-g':'c-y'}">${d.active?'\u0410\u043a\u0442\u0438\u0432\u0435\u043d':'\u041d\u0435\u0430\u043a\u0442\u0438\u0432\u0435\u043d'}</div>${d.tunnel_ok?'<div class="stat-s c-g">ping OK</div>':d.active?'<div class="stat-s c-r">ping fail</div>':''}</div>
+      <div class="stat"><div class="stat-l">Public Key</div><div class="stat-v" style="font-size:11px;word-break:break-all">${d.pubkey||'\u2014'}</div></div>
+    </div>
+    ${d.output?'<pre style="margin-top:10px;font-size:10px;color:var(--t2);background:var(--bg2);padding:8px;border-radius:6px;white-space:pre-wrap;max-height:150px;overflow-y:auto">'+d.output+'</pre>':''}`;
+}
+async function wgInstall(){toast('\u0423\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u044e...');const d=await P('/api/wg/install');toast(d.ok?'\u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e':'\u041e\u0448\u0438\u0431\u043a\u0430',d.ok?'g':'r');loadWg()}
+async function wgSetup(){
+  const ip=document.getElementById('wg-ip').value.trim(),pk=document.getElementById('wg-pk').value.trim();
+  if(!ip||!pk)return toast('\u0417\u0430\u043f\u043e\u043b\u043d\u0438 IP \u0438 Public Key','r');
+  const d=await P('/api/wg/setup',{vps_ip:ip,vps_pubkey:pk});
+  document.getElementById('wg-msg').innerHTML=d.ok?`<span class="c-g">\u2705 ${H(d.message||'')}</span><br>Public Key: <code style="background:var(--bg3);padding:2px 6px;border-radius:3px;user-select:all">${H(d.pubkey||'')}</code>`:'<span class="c-r">\u274c '+H(d.message||'')+'</span>';
+  loadWg();dash()
+}
+async function wgUp(){const d=await P('/api/wg/up');toast(d.ok?'\u0422\u0443\u043d\u043d\u0435\u043b\u044c \u0432\u043a\u043b\u044e\u0447\u0451\u043d':'\u041e\u0448\u0438\u0431\u043a\u0430',d.ok?'g':'r');loadWg();dash()}
+async function wgDown(){const d=await P('/api/wg/down');toast('\u0422\u0443\u043d\u043d\u0435\u043b\u044c \u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d');loadWg();dash()}
+
+// \u2550\u2550 SETTINGS \u2550\u2550
+async function loadSettings(){
+  const d=await J('/api/settings');
+  document.getElementById('s-host').value=d.ollama_host||'0.0.0.0';
+  document.getElementById('s-port').value=d.ollama_port||11434;
+  document.getElementById('s-auto-olla').checked=d.autostart_ollama!==false;
+  document.getElementById('s-auto-agent').checked=d.autostart_agent===true;
+}
+async function saveSettings(){
+  await P('/api/settings',{
+    ollama_host:document.getElementById('s-host').value,
+    ollama_port:parseInt(document.getElementById('s-port').value),
+    autostart_ollama:document.getElementById('s-auto-olla').checked,
+    autostart_agent:document.getElementById('s-auto-agent').checked,
+  });toast('\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e')
+}
+async function enableAutostart(){await P('/api/autostart/enable');toast('\u0410\u0432\u0442\u043e\u0437\u0430\u043f\u0443\u0441\u043a \u0432\u043a\u043b\u044e\u0447\u0451\u043d')}
+
+// \u2550\u2550 LOGS \u2550\u2550
+async function loadLogs(){const d=await J('/api/logs');document.getElementById('log-out').textContent=(d.lines||[]).join('\n')||'\u041f\u0443\u0441\u0442\u043e'}
+
+// \u2550\u2550 Init \u2550\u2550
+dash();DI=setInterval(dash,5000);
+</script>
+</body>
+</html>
