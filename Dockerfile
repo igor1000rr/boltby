@@ -18,6 +18,10 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 
 WORKDIR /app
+
+# git needed by remix build, libatomic1 needed by workerd/miniflare
+RUN apt-get update && apt-get install -y git libatomic1 && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
 # Disable wrangler telemetry
